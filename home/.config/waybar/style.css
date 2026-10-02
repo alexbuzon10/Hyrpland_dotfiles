@@ -1,0 +1,363 @@
+/* Waybar — One Dark Pro Darker / floating islands */
+@define-color bg        #23272e;
+@define-color bg_dark   #1e2227;
+@define-color surface   #2c313a;
+@define-color border    #3e4452;
+@define-color fg        #abb2bf;
+@define-color fg_bright #d7dae0;
+@define-color muted     #5c6370;
+@define-color red       #e06c75;
+@define-color green     #98c379;
+@define-color yellow    #e5c07b;
+@define-color blue      #61afef;
+@define-color purple    #c678dd;
+@define-color cyan      #56b6c2;
+@define-color orange    #d19a66;
+@define-color arch      #1793d1;
+
+* {
+    font-family: "JetBrainsMono Nerd Font Mono", monospace;
+    font-size: 13px;
+    min-height: 0;
+    border: none;
+}
+
+window#waybar {
+    background: transparent;
+    color: @fg;
+}
+
+/* Lanzador Arch: azul oficial y separado del resto de la barra. */
+#image.arch {
+    margin: 0 2px 0 0;
+    padding: 0 10px;
+    border-radius: 12px;
+    background: @arch;
+    box-shadow: none;
+    transition: all 160ms ease;
+}
+
+#image.arch:hover {
+    background: @blue;
+    box-shadow: none;
+}
+
+/* Espacios de trabajo: una isla compacta con botones independientes. */
+#workspaces {
+    margin: 0;
+    padding: 3px 4px;
+    border: 1px solid @border;
+    border-radius: 12px;
+    background: rgba(30, 34, 39, 0.94);
+    box-shadow: none;
+}
+
+#workspaces button {
+    min-width: 22px;
+    padding: 0 4px;
+    margin: 0 1px;
+    border-radius: 8px;
+    color: @fg;
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
+    transition: all 160ms ease;
+}
+
+#workspaces button.empty { color: @muted; }
+#workspaces button:hover { color: @blue; background: @surface; }
+#workspaces button.active {
+    color: @bg;
+    background: @blue;
+    font-weight: bold;
+}
+#workspaces button.urgent { color: @bg; background: @red; }
+
+/* Título de ventana centrado, discreto y flotante. */
+#window {
+    margin: 0 6px;
+    padding: 0 14px;
+    border: 1px solid rgba(62, 68, 82, 0.85);
+    border-radius: 12px;
+    color: @fg;
+    background: rgba(30, 34, 39, 0.90);
+    box-shadow: none;
+}
+
+window#waybar.empty #window { background: transparent; border-color: transparent; box-shadow: none; }
+
+/* Botones flotantes del bloque derecho. */
+#custom-bluetooth,
+#custom-htb-vpn,
+#custom-target,
+#custom-private-ip,
+#network,
+#custom-battery,
+#power-profiles-daemon,
+#custom-notification,
+#image.quick-settings,
+#clock,
+#tray,
+#custom-power {
+    margin: 0;
+    padding: 0 9px;
+    border: 1px solid @border;
+    border-radius: 11px;
+    color: @fg;
+    background: rgba(30, 34, 39, 0.94);
+    box-shadow: none;
+    transition: all 160ms ease;
+}
+
+#custom-bluetooth:hover,
+#custom-htb-vpn:hover,
+#custom-target:hover,
+#custom-private-ip:hover,
+#network:hover,
+#custom-battery:hover,
+#power-profiles-daemon:hover,
+#custom-notification:hover,
+#image.quick-settings:hover,
+#clock:hover {
+    color: @fg_bright;
+    background-color: @surface;
+    border-color: @blue;
+}
+
+/* Código cromático One Dark Pro Darker por función. */
+#custom-bluetooth { color: @purple; }
+#custom-bluetooth.disabled { color: @muted; }
+#custom-bluetooth.connected,
+#custom-bluetooth.discovering { color: @blue; }
+
+#network { color: @cyan; min-width: 16px; padding-left: 7px; padding-right: 11px; }
+#network.disconnected,
+#custom-private-ip.disconnected { color: @muted; }
+#custom-private-ip { color: @cyan; }
+
+#custom-htb-vpn {
+    color: @muted;
+    padding: 0 9px 0 31px;
+    background-color: #111927;
+    background-repeat: no-repeat;
+    background-position: 9px center;
+    background-size: 16px 16px;
+}
+#custom-htb-vpn.htb {
+    color: #9fef00;
+    background-color: #111927;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/htb-vpn.svg");
+    border-color: rgba(159, 239, 0, 0.42);
+}
+#custom-htb-vpn.other {
+    color: #56c7e8;
+    background-color: @bg_dark;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/vpn.svg");
+    border-color: rgba(86, 199, 232, 0.42);
+}
+#custom-htb-vpn.mixed {
+    color: @fg_bright;
+    padding-left: 49px;
+    background-color: #111927;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/vpn-mixed.svg");
+    background-size: 34px 16px;
+    border-color: rgba(159, 239, 0, 0.42);
+}
+#custom-htb-vpn.connecting-htb,
+#custom-htb-vpn.connecting-other {
+    color: @yellow;
+    border-color: rgba(229, 192, 123, 0.55);
+}
+#custom-htb-vpn.connecting-htb {
+    background-color: #111927;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/htb-vpn-connecting.svg");
+}
+#custom-htb-vpn.connecting-other {
+    background-color: @bg_dark;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/vpn-connecting.svg");
+}
+#custom-htb-vpn.disconnected { color: @muted; }
+#custom-htb-vpn.hidden {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    background-image: none;
+}
+#custom-htb-vpn.htb:hover,
+#custom-htb-vpn.mixed:hover { color: #9fef00; background-color: #1a2332; border-color: #9fef00; }
+#custom-htb-vpn.other:hover { color: #56c7e8; background-color: @surface; border-color: #56c7e8; }
+
+#custom-target {
+    color: @red;
+    margin: 1px 0;
+    padding: 0 9px 0 31px;
+    background-color: rgba(224, 108, 117, 0.16);
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/target.svg");
+    background-repeat: no-repeat;
+    background-position: 9px center;
+    background-size: 16px 16px;
+    border-color: rgba(224, 108, 117, 0.62);
+}
+#custom-target.waiting,
+#custom-target.active { color: @red; }
+#custom-target:hover {
+    color: @fg_bright;
+    background-color: rgba(224, 108, 117, 0.28);
+    border-color: @red;
+}
+#custom-target.hidden {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+/* Audio conserva el drawer/slider, ahora como una sola isla azul. */
+#volume {
+    margin: 0;
+    padding: 0;
+    border: 1px solid @border;
+    border-radius: 11px;
+    background: rgba(30, 34, 39, 0.94);
+    box-shadow: none;
+}
+#volume:hover {
+    border-color: @blue;
+}
+
+#custom-microphone {
+    color: @fg_bright;
+    background-color: transparent;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/microphone.svg");
+    background-repeat: no-repeat;
+    background-position: 9px center;
+    background-size: 16px 16px;
+    padding: 0 9px 0 31px;
+    margin: 0;
+    border-radius: 10px 0 0 10px;
+    font-size: 14px;
+}
+#custom-microphone.inactive,
+#custom-audio-separator.inactive { min-width: 0; padding: 0; margin: 0; font-size: 0; }
+#custom-microphone.active { color: @fg_bright; }
+#custom-microphone.muted { color: @muted; }
+#custom-microphone:hover,
+#volume-control:hover { background-color: @surface; }
+
+#custom-audio-separator { color: @border; background: transparent; margin: 0; padding: 0; font-size: 12px; }
+#volume-control { background: transparent; margin: 0; padding: 0; border-radius: 0 10px 10px 0; }
+#volume > widget:first-child > #volume-control { border-radius: 10px; }
+#custom-audio {
+    color: @fg_bright;
+    background-color: transparent;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-high.svg");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 16px 16px;
+    padding: 0 10px 0 32px;
+    margin: 0;
+    font-size: 14px;
+}
+#custom-audio.low { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-low.svg"); }
+#custom-audio.medium { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-medium.svg"); }
+#custom-audio.high { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-high.svg"); }
+#custom-audio.boosted {
+    color: @orange;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-boost.svg");
+}
+#custom-audio.zero,
+#custom-audio.muted { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/volume-mute.svg"); }
+#custom-audio.muted { color: @muted; }
+
+#volume-slider-module { padding: 0 10px 0 6px; margin: 0; background: transparent; }
+#volume-slider { min-width: 85px; padding: 0; margin: 0; background: transparent; }
+#volume-slider trough {
+    min-width: 85px;
+    min-height: 3px;
+    border-radius: 999px;
+    background: @border;
+}
+#volume-slider highlight { min-height: 3px; border-radius: 999px; background: @blue; }
+#volume-slider slider {
+    min-width: 8px;
+    min-height: 8px;
+    margin: -3px;
+    border-radius: 50%;
+    background: @fg_bright;
+}
+#volume-slider.over-100 slider { background: @orange; }
+#volume-slider.boost trough {
+    background: linear-gradient(to right, @border 0, @border 85px, rgba(209, 154, 102, 0.38) 85px, rgba(209, 154, 102, 0.38) 100%);
+}
+#volume-slider.boost highlight {
+    background: linear-gradient(to right, @blue 0, @blue 85px, @orange 85px, @orange 100%);
+}
+
+#custom-battery {
+    color: @fg_bright;
+    font-size: 14px;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-half.svg");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 16px 16px;
+    padding-left: 32px;
+    padding-right: 10px;
+}
+#custom-battery.full { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-full.svg"); }
+#custom-battery.high { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-high.svg"); }
+#custom-battery.medium { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-half.svg"); }
+#custom-battery.low { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-low.svg"); }
+#custom-battery.critical { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery.svg"); color: @red; }
+#custom-battery.charging { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/battery-charging.svg"); color: @green; }
+#power-profiles-daemon.performance { color: @red; }
+#power-profiles-daemon.power-saver { color: @green; }
+#power-profiles-daemon.balanced { color: @yellow; }
+#custom-notification {
+    min-width: 40px;
+    padding: 0;
+    color: @fg_bright;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/bell.svg");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 16px 16px;
+}
+#custom-notification.dnd { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/moon.svg"); }
+#custom-notification.inhibited { background-image: url("__DOTFILES_HOME__/.config/waybar/assets/bell-off.svg"); }
+#image.quick-settings { padding: 0 10px; }
+#image.quick-settings:hover {
+    background: @surface;
+    border-color: @blue;
+}
+#clock {
+    color: @fg_bright;
+    margin-left: 2px;
+    padding-left: 32px;
+    padding-right: 10px;
+    background-image: url("__DOTFILES_HOME__/.config/waybar/assets/calendar.svg");
+    background-repeat: no-repeat;
+    background-position: 10px center;
+    background-size: 16px 16px;
+}
+#tray {
+    min-width: 0;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    opacity: 0;
+}
+#custom-power { color: @red; font-size: 15px; padding: 0 11px; margin-right: 0; }
+#custom-power:hover { color: @bg; background: @red; border-color: @red; }
+
+tooltip {
+    background: rgba(30, 34, 39, 0.98);
+    border: 1px solid @border;
+    border-radius: 10px;
+}
+tooltip label { color: @fg_bright; padding: 7px; }

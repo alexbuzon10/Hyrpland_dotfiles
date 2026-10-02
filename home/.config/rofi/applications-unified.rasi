@@ -1,0 +1,76 @@
+@import "modern-dark.rasi"
+
+window {
+    width: 920px;
+    height: 610px;
+}
+
+mainbox {
+    orientation: horizontal;
+    spacing: 0px;
+    padding: 18px;
+    children: [ mode-switcher, applications-panel ];
+}
+
+mode-switcher {
+    orientation: vertical;
+    width: 190px;
+    spacing: 5px;
+    padding: 4px 16px 4px 0px;
+    border: 0px 1px 0px 0px;
+    border-color: @surface-active;
+}
+
+button {
+    padding: 12px 14px;
+    border: 0px;
+    border-radius: 9px;
+    background-color: @transparent;
+    text-color: @muted;
+    horizontal-align: 0.0;
+    cursor: pointer;
+}
+
+button selected {
+    background-color: @surface-hover;
+    text-color: @blue;
+}
+
+applications-panel {
+    orientation: vertical;
+    spacing: 11px;
+    padding: 0px 0px 0px 16px;
+    children: [ inputbar, listview, message ];
+}
+
+inputbar {
+    margin: 0px;
+}
+
+listview {
+    lines: 9;
+    columns: 1;
+    fixed-height: true;
+    spacing: 5px;
+}
+
+element {
+    padding: 9px 11px;
+}
+
+element-icon {
+    size: 27px;
+}
+
+message {
+    margin: 0px;
+    border: 0px;
+    border-radius: 0px;
+    background-color: @transparent;
+}
+
+textbox {
+    padding: 3px 4px;
+    background-color: @transparent;
+    text-color: @muted;
+}

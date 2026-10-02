@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+runtime_dir="${XDG_RUNTIME_DIR:-/tmp}"
+socket_path="$runtime_dir/emoji-picker.sock"
+picker_command="${EMOJI_PICKER_COMMAND:-$HOME/.local/bin/emoji-picker}"
+netcat_command="$(command -v nc || command -v ncat || true)"
+
+if [[ -z "$netcat_command" ]]; then
+    printf 'emoji-picker-show: nc or ncat is required\n' >&2
+    exit 1
+fi
+
+if [[ ! -S "$socket_path" ]]; then
+    setsid -f "$picker_command" --daemon
+    for _attempt in {1..60}; do
+        [[ -S "$socket_path" ]] && break
+        sleep 0.05
+    done
+fi
+
+[[ -S "$socket_path" ]] && printf 'show' | "$netcat_command" -U "$socket_path"

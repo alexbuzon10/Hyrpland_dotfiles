@@ -1,0 +1,33 @@
+/* Tema de Rofimoji: conserva One Dark Pro Darker y cambia solo la rejilla. */
+@import "modern-dark.rasi"
+
+window {
+    width: 650px;
+}
+
+mainbox {
+    children: [ listview, message ];
+}
+
+listview {
+    columns: 8;
+    lines: 5;
+    flow: horizontal;
+    layout: vertical;
+    cycle: true;
+    dynamic: true;
+    fixed-height: true;
+    fixed-columns: true;
+    spacing: 7px;
+}
+
+element {
+    orientation: vertical;
+    padding: 13px 8px;
+}
+
+element-text {
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    font: "JetBrainsMono Nerd Font 25";
+}

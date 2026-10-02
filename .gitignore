@@ -1,0 +1,11 @@
+.DS_Store
+*.log
+*.pyc
+*.so
+__pycache__/
+.idea/
+.vscode/
+
+# Estado local generado por scripts y aplicaciones
+home/.config/waybar/audio-boost
+home/.config/nvim/lazy/

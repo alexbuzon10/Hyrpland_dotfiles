@@ -1,0 +1,238 @@
+/* ================================
+   SwayNC — One Dark Pro Darker
+   ================================ */
+
+* {
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    color: #abb2bf;
+}
+
+
+/* ================================
+   CENTRO DE NOTIFICACIONES
+   ================================ */
+
+.control-center {
+    background: rgba(30, 34, 39, 0.98);
+    border: 1px solid #3e4452;
+    border-radius: 14px;
+    margin-top: 10px;
+    margin-right: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+/* ================================
+   NOTIFICACIONES
+   ================================ */
+
+.notification-row {
+    outline: none;
+    margin: 6px;
+}
+
+.notification-row:focus,
+.notification-row:hover {
+    background: transparent;
+}
+
+.notification {
+    background: transparent;
+    border: none;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.notification-background {
+    background: rgba(35, 39, 46, 0.98);
+    border: 1px solid #3e4452;
+    border-radius: 12px;
+    box-shadow: none;
+}
+
+.notification-content {
+    background: transparent;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+/* Las notificaciones agrupadas muestran dos tarjetas asomando por debajo. */
+.notification-group.collapsed .notification-row:last-child .notification-background {
+    margin-bottom: 8px;
+    box-shadow: none;
+}
+
+
+/* ================================
+   TEXTO DE LAS NOTIFICACIONES
+   ================================ */
+
+.app-name {
+    color: #5c6370;
+    font-size: 11px;
+}
+
+.summary {
+    color: #d7dae0;
+    font-weight: bold;
+}
+
+.body {
+    color: #abb2bf;
+}
+
+.time {
+    color: #7f848e;
+    font-size: 11px;
+}
+
+
+/* ================================
+   BOTÓN CERRAR
+   ================================ */
+
+.close-button {
+    background: transparent;
+    color: #7f848e;
+
+    border: none;
+    border-radius: 50%;
+
+    box-shadow: none;
+}
+
+.close-button:hover {
+    background: #2c313a;
+    color: #d7dae0;
+}
+
+
+/* ================================
+   TÍTULO
+   ================================ */
+
+.widget-title {
+    margin: 8px;
+}
+
+.widget-title > label {
+    color: #d7dae0;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.widget-title > button {
+    background: #2c313a;
+    color: #abb2bf;
+
+    border: 1px solid #3e4452;
+    border-radius: 8px;
+
+    padding: 6px 12px;
+    box-shadow: none;
+}
+
+.widget-title > button:hover {
+    background: #323842;
+    color: #d7dae0;
+    border-color: #61afef;
+}
+
+
+/* ================================
+   MODOS DE NOTIFICACIÓN
+   ================================ */
+
+.widget-label {
+    margin: 12px 10px 0;
+    padding: 0 2px;
+}
+
+.widget-label > label {
+    color: #7f848e;
+    font-size: 10px;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.widget-buttons-grid {
+    margin: 7px 8px 10px;
+}
+
+.widget-buttons-grid flowboxchild {
+    background: transparent;
+    min-width: 180px;
+}
+
+.widget-buttons-grid flowboxchild > button {
+    min-height: 32px;
+    color: #abb2bf;
+    background-color: #23272e;
+    background-repeat: no-repeat;
+    background-position: center 12px;
+    background-size: 20px 20px;
+    border: 1px solid #3e4452;
+    border-radius: 10px;
+    padding: 34px 10px 9px;
+    box-shadow: none;
+    font-size: 11px;
+    font-weight: bold;
+    transition: 120ms ease;
+}
+
+.widget-buttons-grid flowboxchild:first-child > button {
+    background-image: url("__DOTFILES_HOME__/.config/swaync/assets/moon.svg");
+}
+
+.widget-buttons-grid flowboxchild:last-child > button {
+    background-image: url("__DOTFILES_HOME__/.config/swaync/assets/bell-off.svg");
+}
+
+.widget-buttons-grid flowboxchild > button:hover {
+    color: #d7dae0;
+    background-color: #2c313a;
+    border-color: #5c6370;
+}
+
+.widget-buttons-grid flowboxchild:first-child > button.toggle:checked {
+    color: #61afef;
+    background-color: rgba(97, 175, 239, 0.14);
+    border-color: #61afef;
+}
+
+.widget-buttons-grid flowboxchild:last-child > button.toggle:checked {
+    color: #e06c75;
+    background-color: rgba(224, 108, 117, 0.14);
+    border-color: #e06c75;
+}
+
+
+/* ================================
+   LISTA DE NOTIFICACIONES
+   ================================ */
+
+.widget-notifications {
+    background: transparent;
+}
+
+
+/* ================================
+   BOTONES DE ACCIÓN
+   ================================ */
+
+.notification-action {
+    background: #2c313a;
+    color: #abb2bf;
+
+    border: 1px solid #3e4452;
+    border-radius: 8px;
+
+    box-shadow: none;
+}
+
+.notification-action:hover {
+    background: #323842;
+    color: #d7dae0;
+    border-color: #61afef;
+}

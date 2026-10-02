@@ -1,0 +1,90 @@
+/* Wlogout — One Dark Pro Darker / minimal SVG */
+
+* {
+    background-image: none;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 15px;
+}
+
+window {
+    background-color: rgba(24, 26, 31, 0.86);
+}
+
+button {
+    color: #abb2bf;
+    background-color: #1e2227;
+    border: 1px solid #3e4452;
+    border-radius: 14px;
+    margin: 0;
+    background-repeat: no-repeat;
+    background-position: center 44%;
+    background-size: 64px;
+    box-shadow: none;
+    transition: border-color 160ms ease, color 160ms ease;
+}
+
+button:focus {
+    color: #abb2bf;
+    background-color: #1e2227;
+    border-color: #3e4452;
+    outline: none;
+}
+
+button:hover {
+    color: #d7dae0;
+    background-color: #2c313a;
+    outline: none;
+}
+
+
+/* ================================
+   ICONOS
+   ================================ */
+
+#lock {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/lock.svg"));
+}
+#lock:hover {
+    border-color: #61afef;
+    background-color: #26333f;
+}
+
+#logout {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/logout.svg"));
+}
+#logout:hover {
+    border-color: #c678dd;
+    background-color: #322c3d;
+}
+
+#suspend {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/suspend.svg"));
+}
+#suspend:hover {
+    border-color: #56b6c2;
+    background-color: #25343a;
+}
+
+#hibernate {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/hibernate.svg"));
+}
+#hibernate:hover {
+    border-color: #e5c07b;
+    background-color: #363531;
+}
+
+#reboot {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/reboot.svg"));
+}
+#reboot:hover {
+    border-color: #98c379;
+    background-color: #2d3531;
+}
+
+#shutdown {
+    background-image: image(url("__DOTFILES_HOME__/.config/wlogout/icons/shutdown.svg"));
+}
+#shutdown:hover {
+    border-color: #e06c75;
+    background-color: #352b30;
+}

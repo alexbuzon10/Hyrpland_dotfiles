@@ -1,0 +1,26 @@
+configuration {
+    modi: "drun,run,window";
+    show-icons: true;
+    drun-display-format: "{name}";
+    display-drun: "Aplicaciones";
+    display-run: "Ejecutar";
+    display-window: "Ventanas";
+
+    font: "JetBrainsMonoNL Nerd Font 11";
+    terminal: "kitty";
+
+    matching: "fuzzy";
+    sort: true;
+    sorting-method: "fzf";
+
+    disable-history: false;
+    hide-scrollbar: true;
+    sidebar-mode: false;
+
+    /* Selección con el puntero y apertura con un único clic izquierdo. */
+    hover-select: true;
+    me-select-entry: "";
+    me-accept-entry: "MousePrimary";
+}
+
+@theme "modern-dark.rasi"

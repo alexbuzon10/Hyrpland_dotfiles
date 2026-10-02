@@ -1,0 +1,138 @@
+/* Rofi — One Dark Pro Darker (VS Code / Atom) */
+* {
+    background:      rgba(35, 39, 46, 0.97);
+    surface:         #1e2227;
+    surface-hover:   #2c313a;
+    surface-active:  #3e4452;
+    foreground:      #abb2bf;
+    foreground-hi:   #d7dae0;
+    muted:           #5c6370;
+    red:             #e06c75;
+    green:           #98c379;
+    yellow:          #e5c07b;
+    blue:            #61afef;
+    purple:          #c678dd;
+    cyan:            #56b6c2;
+    orange:          #d19a66;
+    transparent:     #00000000;
+    background-color: @transparent;
+    text-color: @foreground;
+}
+
+window {
+    location: center;
+    anchor: center;
+    width: 650px;
+    border: 2px;
+    border-color: @surface-active;
+    border-radius: 16px;
+    background-color: @background;
+}
+
+mainbox {
+    spacing: 11px;
+    padding: 16px;
+    background-color: @transparent;
+    children: [ inputbar, listview, message ];
+}
+
+inputbar {
+    spacing: 11px;
+    padding: 11px 14px;
+    border: 1px;
+    border-color: @surface-active;
+    border-radius: 11px;
+    background-color: @surface;
+    text-color: @foreground;
+    children: [ textbox-search-icon, entry ];
+    cursor: text;
+}
+
+textbox-search-icon {
+    padding: 0px 3px 0px 0px;
+    background-color: @transparent;
+    text-color: @blue;
+    str: "";
+    expand: false;
+    vertical-align: 0.5;
+    cursor: text;
+}
+
+entry {
+    background-color: @transparent;
+    text-color: @foreground-hi;
+    cursor: text;
+    placeholder: "Buscar aplicaciones…";
+    placeholder-color: @muted;
+}
+
+listview {
+    lines: 8;
+    columns: 1;
+    fixed-height: false;
+    spacing: 5px;
+    border: 0px;
+    background-color: @transparent;
+    scrollbar: false;
+}
+
+element {
+    spacing: 11px;
+    padding: 9px 11px;
+    border: 0px;
+    border-radius: 10px;
+    background-color: @transparent;
+    text-color: @foreground;
+    cursor: pointer;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: @transparent;
+    text-color: @foreground;
+}
+
+element selected.normal {
+    background-color: @surface-hover;
+    text-color: @foreground-hi;
+}
+
+element selected.active {
+    background-color: @surface-hover;
+    text-color: @green;
+}
+
+element selected.urgent {
+    background-color: @surface-hover;
+    text-color: @red;
+}
+
+element-icon {
+    size: 28px;
+    background-color: @transparent;
+    cursor: pointer;
+}
+
+element-text {
+    vertical-align: 0.5;
+    background-color: @transparent;
+    text-color: inherit;
+    cursor: pointer;
+}
+
+button,
+scrollbar { cursor: pointer; }
+
+message {
+    margin: 2px 0px 0px 0px;
+    border: 1px;
+    border-color: @surface-active;
+    border-radius: 10px;
+    background-color: @surface;
+}
+
+textbox {
+    padding: 9px 11px;
+    background-color: @transparent;
+    text-color: @yellow;
+}

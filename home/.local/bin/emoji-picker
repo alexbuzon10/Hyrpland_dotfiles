@@ -1,0 +1,475 @@
+#!/usr/bin/env python3
+
+import glob
+import html
+import importlib.util
+import json
+import os
+import re
+import socket
+import subprocess
+import sys
+import unicodedata
+from functools import lru_cache
+from pathlib import Path
+
+import gi
+
+gi.require_version("Gtk", "3.0")
+gi.require_version("Gdk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+
+from gi.repository import Gdk, GLib, Gtk, GtkLayerShell
+
+
+SOCKET_PATH = os.path.join(os.environ.get("XDG_RUNTIME_DIR", "/tmp"), "emoji-picker.sock")
+LANGUAGE = os.environ.get("EMOJI_PICKER_LANGUAGE", os.environ.get("LANG", "en")).lower()
+
+
+def translated(english, spanish):
+    return spanish if LANGUAGE.startswith("es") else english
+
+CATEGORIES = (
+    ("󰱱", translated("Faces & emotions", "Caras y emociones"), "emojis_smileys_emotion"),
+    ("󰀉", translated("People & body", "Personas y cuerpo"), "emojis_people_body"),
+    ("󰏩", translated("Animals & nature", "Animales y naturaleza"), "emojis_animals_nature"),
+    ("󰉚", translated("Food & drink", "Comida y bebida"), "emojis_food_drink"),
+    ("󰒸", translated("Activities", "Actividades"), "emojis_activities"),
+    ("󰀝", translated("Travel & places", "Viajes y lugares"), "emojis_travel_places"),
+    ("󰌵", translated("Objects", "Objetos"), "emojis_objects"),
+    ("󰠱", translated("Symbols", "Símbolos"), "emojis_symbols"),
+    ("󰈻", translated("Flags", "Banderas"), "emojis_flags"),
+)
+
+CSS = b"""
+window {
+    background-color: rgba(35, 39, 46, 0.98);
+    border: 1px solid #3e4452;
+    border-radius: 14px;
+    color: #abb2bf;
+}
+.picker { padding: 14px; }
+.search-box {
+    min-height: 38px;
+    margin-bottom: 6px;
+    padding: 0 12px;
+    color: #d7dae0;
+    caret-color: #61afef;
+    background-color: #1e2227;
+    border: 1px solid #3e4452;
+    border-radius: 10px;
+    box-shadow: none;
+}
+.search-box:focus { border-color: #61afef; }
+.search-box image { color: #7f848e; }
+.categories {
+    background-color: #1e2227;
+    border-radius: 10px;
+    padding: 5px;
+}
+.category {
+    min-width: 48px;
+    min-height: 38px;
+    padding: 2px 6px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    box-shadow: none;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 18px;
+}
+.category { color: #abb2bf; }
+.category:hover { color: #d7dae0; background-color: #2c313a; }
+.category.active-category { color: #61afef; background-color: #2c313a; }
+.title {
+    color: #7f848e;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 11px;
+    padding: 8px 2px 4px 2px;
+}
+.section-title {
+    color: #d7dae0;
+    font-family: "JetBrainsMono Nerd Font";
+    font-size: 13px;
+    font-weight: bold;
+    padding: 14px 2px 7px 2px;
+}
+scrolledwindow { border: 0; }
+.emoji {
+    min-width: 54px;
+    min-height: 48px;
+    padding: 5px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    box-shadow: none;
+    font-family: "Noto Color Emoji", "JetBrainsMono Nerd Font";
+    font-size: 25px;
+}
+.emoji:hover, .emoji:focus { background-color: #2c313a; }
+/* Keep overlay hover geometry independent of the desktop GTK theme. */
+scrollbar,
+scrollbar trough {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    margin: 0;
+    padding: 0;
+    transition: none;
+}
+scrollbar slider {
+    min-width: 6px;
+    min-height: 30px;
+    margin: 2px;
+    padding: 0;
+    border: 0;
+    border-radius: 4px;
+    background: #3e4452;
+    box-shadow: none;
+    transition: none;
+}
+scrollbar slider:hover { background-color: #5c6370; }
+scrollbar slider:active { background-color: #61afef; }
+"""
+
+
+def find_data_directories():
+    candidates = []
+    custom_dir = os.environ.get("ROFIMOJI_DATA_DIR")
+    if custom_dir:
+        candidates.append(Path(custom_dir).expanduser())
+
+    picker_spec = importlib.util.find_spec("picker")
+    if picker_spec and picker_spec.origin:
+        candidates.append(Path(picker_spec.origin).parent / "data")
+
+    patterns = (
+        "/usr/lib/python*/site-packages/picker/data",
+        "/usr/lib/python*/dist-packages/picker/data",
+        "/usr/local/lib/python*/site-packages/picker/data",
+        str(Path.home() / ".local/lib/python*/site-packages/picker/data"),
+        str(Path.home() / ".local/share/pipx/venvs/rofimoji/lib/python*/site-packages/picker/data"),
+        "/usr/share/rofimoji/data",
+        "/usr/local/share/rofimoji/data",
+        str(Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share")) / "rofimoji/data"),
+    )
+    for pattern in patterns:
+        candidates.extend(Path(path) for path in glob.glob(pattern))
+
+    unique = []
+    for candidate in candidates:
+        if candidate.is_dir() and candidate not in unique:
+            unique.append(candidate)
+    return unique
+
+
+@lru_cache(maxsize=None)
+def load_emojis(file_stem):
+    entries = []
+    seen = set()
+    for data_dir in find_data_directories():
+        paths = [
+            data_dir / f"{file_stem}.csv",
+            data_dir / "additional" / f"{file_stem}.csv",
+            *data_dir.glob(f"{file_stem}*.additional.csv"),
+        ]
+        for path in paths:
+            if not path.is_file():
+                continue
+            with open(path, encoding="utf-8") as source:
+                for raw_line in source:
+                    line = raw_line.strip()
+                    if not line:
+                        continue
+                    parts = line.split(maxsplit=1)
+                    emoji = parts[0]
+                    if emoji in seen:
+                        continue
+                    description = parts[1] if len(parts) == 2 else ""
+                    description = html.unescape(re.sub(r"<[^>]+>", "", description))
+                    seen.add(emoji)
+                    entries.append((emoji, description))
+    return entries
+
+
+def searchable_text(value):
+    normalized = unicodedata.normalize("NFKD", value.casefold())
+    return "".join(character for character in normalized if not unicodedata.combining(character))
+
+
+@lru_cache(maxsize=1)
+def load_spanish_search_index():
+    data_home = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local/share"))
+    candidates = (
+        Path(__file__).resolve().parent / "data" / "emoji-search-es.json",
+        data_home / "emoji-picker" / "emoji-search-es.json",
+    )
+    for path in candidates:
+        try:
+            with open(path, encoding="utf-8") as source:
+                return json.load(source)
+        except (OSError, json.JSONDecodeError):
+            continue
+    return {}
+
+
+class EmojiPicker(Gtk.Window):
+    def __init__(self):
+        super().__init__(title=translated("Emoji picker", "Selector de emojis"))
+        self.set_default_size(650, 510)
+        self.set_resizable(False)
+        self.connect("key-press-event", self.on_key_press)
+        self.connect("delete-event", self.on_close_request)
+
+        if not any(load_emojis(file_stem) for _, _, file_stem in CATEGORIES):
+            raise RuntimeError(
+                "Rofimoji emoji data was not found. Install rofimoji or set ROFIMOJI_DATA_DIR."
+            )
+
+        GtkLayerShell.init_for_window(self)
+        GtkLayerShell.set_layer(self, GtkLayerShell.Layer.OVERLAY)
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+        GtkLayerShell.set_namespace(self, "emoji-picker")
+
+        provider = Gtk.CssProvider()
+        provider.load_from_data(CSS)
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(), provider, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+
+        outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        outer.get_style_context().add_class("picker")
+        self.add(outer)
+
+        self.search_entry = Gtk.SearchEntry()
+        self.search_entry.set_placeholder_text("Buscar emojis en español…")
+        self.search_entry.get_style_context().add_class("search-box")
+        self.search_entry.connect("search-changed", self.on_search_changed)
+        outer.pack_start(self.search_entry, False, False, 0)
+
+        category_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=3)
+        category_bar.set_homogeneous(True)
+        category_bar.get_style_context().add_class("categories")
+        outer.pack_start(category_bar, False, False, 0)
+
+        self.category_buttons = []
+        for index, (icon, name, _) in enumerate(CATEGORIES):
+            button = Gtk.Button(label=icon)
+            button.set_tooltip_text(name)
+            button.set_relief(Gtk.ReliefStyle.NONE)
+            button.get_style_context().add_class("category")
+            button.connect("clicked", lambda _button, value=index: self.scroll_to_category(value))
+            category_bar.pack_start(button, True, True, 0)
+            self.category_buttons.append(button)
+
+        self.title_label = Gtk.Label(xalign=0)
+        self.title_label.get_style_context().add_class("title")
+        outer.pack_start(self.title_label, False, False, 0)
+
+        self.scroller = Gtk.ScrolledWindow()
+        self.scroller.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scroller.set_overlay_scrolling(True)
+        outer.pack_start(self.scroller, True, True, 0)
+
+        self.content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.scroller.add(self.content)
+
+        spanish_index = load_spanish_search_index()
+        self.sections = []
+        self.emoji_children = []
+        self.flows = []
+        self.search_query = ""
+        for _icon, name, file_stem in CATEGORIES:
+            section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+            heading = Gtk.Label(label=name, xalign=0)
+            heading.get_style_context().add_class("section-title")
+            section.pack_start(heading, False, False, 0)
+
+            flow = Gtk.FlowBox()
+            flow.set_selection_mode(Gtk.SelectionMode.NONE)
+            flow.set_homogeneous(True)
+            flow.set_min_children_per_line(8)
+            flow.set_max_children_per_line(8)
+            flow.set_row_spacing(7)
+            flow.set_column_spacing(7)
+            flow.set_filter_func(self.filter_emoji)
+            self.flows.append(flow)
+
+            for emoji, description in load_emojis(file_stem):
+                button = Gtk.Button(label=emoji)
+                button.set_relief(Gtk.ReliefStyle.NONE)
+                button.set_tooltip_text(description)
+                button.get_style_context().add_class("emoji")
+                button.connect("clicked", self.insert_emoji, emoji)
+                flow.add(button)
+                child = button.get_parent()
+                spanish = spanish_index.get(emoji.replace("\ufe0f", ""), "")
+                child.search_text = searchable_text(
+                    f"{emoji} {description} {spanish}"
+                )
+                self.emoji_children.append((child, section))
+
+            section.pack_start(flow, False, False, 0)
+            self.content.pack_start(section, False, False, 0)
+            self.sections.append(section)
+
+        self.current_category = 0
+        self.set_active_category(0)
+        self.scroller.get_vadjustment().connect("value-changed", self.on_scroll_position_changed)
+
+    def on_search_changed(self, entry):
+        self.search_query = searchable_text(entry.get_text().strip())
+        visible_sections = {section: False for section in self.sections}
+
+        for flow in self.flows:
+            flow.invalidate_filter()
+
+        for child, section in self.emoji_children:
+            if self.filter_emoji(child):
+                visible_sections[section] = True
+
+        for section, visible in visible_sections.items():
+            section.set_visible(visible)
+
+        if self.search_query:
+            self.title_label.set_text("Resultados de búsqueda")
+            self.scroller.get_vadjustment().set_value(0)
+        else:
+            self.set_active_category(self.current_category)
+
+    def filter_emoji(self, child):
+        return not self.search_query or self.search_query in child.search_text
+
+    def set_active_category(self, index):
+        index %= len(CATEGORIES)
+        self.current_category = index
+        for position, button in enumerate(self.category_buttons):
+            context = button.get_style_context()
+            if position == index:
+                context.add_class("active-category")
+            else:
+                context.remove_class("active-category")
+
+        _, name, _file_stem = CATEGORIES[index]
+        self.title_label.set_text(name)
+
+    def scroll_to_category(self, index):
+        index %= len(CATEGORIES)
+        if self.search_entry.get_text():
+            self.search_entry.set_text("")
+        self.set_active_category(index)
+
+        def move_to_section():
+            adjustment = self.scroller.get_vadjustment()
+            target = self.sections[index].get_allocation().y
+            maximum = max(adjustment.get_lower(), adjustment.get_upper() - adjustment.get_page_size())
+            adjustment.set_value(min(target, maximum))
+            return GLib.SOURCE_REMOVE
+
+        GLib.idle_add(move_to_section)
+
+    def on_scroll_position_changed(self, adjustment):
+        marker = adjustment.get_value() + 24
+        visible_category = 0
+        for index, section in enumerate(self.sections):
+            if section.get_allocation().y <= marker:
+                visible_category = index
+            else:
+                break
+        if visible_category != self.current_category:
+            self.set_active_category(visible_category)
+
+    def insert_emoji(self, _button, emoji):
+        # Cede el teclado a la ventana que estaba activa, escribe el emoji y
+        # recupera el foco sin cerrar el selector.
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.NONE)
+
+        def type_emoji():
+            subprocess.run(["wtype", emoji], check=False)
+            GLib.timeout_add(80, enable_picker_keyboard)
+            return GLib.SOURCE_REMOVE
+
+        def enable_picker_keyboard():
+            GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+            return GLib.SOURCE_REMOVE
+
+        GLib.timeout_add(120, type_emoji)
+
+    def on_key_press(self, _widget, event):
+        if event.keyval == Gdk.KEY_Escape:
+            self.hide()
+            return True
+        if event.keyval in (Gdk.KEY_Left, Gdk.KEY_Page_Up) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            self.scroll_to_category(self.current_category - 1)
+            return True
+        if event.keyval in (Gdk.KEY_Right, Gdk.KEY_Page_Down) and event.state & Gdk.ModifierType.CONTROL_MASK:
+            self.scroll_to_category(self.current_category + 1)
+            return True
+        return False
+
+    def on_close_request(self, _widget, _event):
+        self.hide()
+        return True
+
+    def show_picker(self):
+        GtkLayerShell.set_keyboard_mode(self, GtkLayerShell.KeyboardMode.EXCLUSIVE)
+        self.show_all()
+        self.on_search_changed(self.search_entry)
+        self.present()
+        self.search_entry.grab_focus()
+
+
+def contact_running_picker(message):
+    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        client.connect(SOCKET_PATH)
+        client.sendall(message.encode())
+        return True
+    except (FileNotFoundError, ConnectionRefusedError):
+        try:
+            os.unlink(SOCKET_PATH)
+        except FileNotFoundError:
+            pass
+        return False
+    finally:
+        client.close()
+
+
+def create_control_socket(picker):
+    server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    server.setblocking(False)
+    server.bind(SOCKET_PATH)
+    server.listen(4)
+
+    def handle_command(_source, _condition):
+        connection, _address = server.accept()
+        with connection:
+            command = connection.recv(32).decode(errors="ignore").strip()
+        if command == "show":
+            picker.show_picker()
+        return True
+
+    GLib.io_add_watch(server.fileno(), GLib.IO_IN, handle_command)
+    return server
+
+
+if __name__ == "__main__":
+    daemon_mode = "--daemon" in sys.argv
+    command = "ping" if daemon_mode else "show"
+    if contact_running_picker(command):
+        raise SystemExit(0)
+
+    picker = EmojiPicker()
+    control_socket = create_control_socket(picker)
+    picker.connect("destroy", Gtk.main_quit)
+    picker.show_all()
+    if daemon_mode:
+        while Gtk.events_pending():
+            Gtk.main_iteration_do(False)
+        picker.hide()
+    Gtk.main()
+    control_socket.close()
+    try:
+        os.unlink(SOCKET_PATH)
+    except FileNotFoundError:
+        pass

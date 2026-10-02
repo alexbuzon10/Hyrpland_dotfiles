@@ -1,0 +1,36 @@
+{
+    "label": "lock",
+    "action": "hyprlock",
+    "text": "Bloquear",
+    "keybind": "l"
+}
+{
+    "label": "logout",
+    "action": "hyprctl dispatch 'hl.dsp.exit()'",
+    "text": "Cerrar sesión",
+    "keybind": "e"
+}
+{
+    "label": "suspend",
+    "action": "systemctl suspend",
+    "text": "Suspender",
+    "keybind": "s"
+}
+{
+    "label": "hibernate",
+    "action": "systemctl hibernate",
+    "text": "Hibernar",
+    "keybind": "h"
+}
+{
+    "label": "reboot",
+    "action": "systemctl reboot",
+    "text": "Reiniciar",
+    "keybind": "r"
+}
+{
+    "label": "shutdown",
+    "action": "systemctl poweroff",
+    "text": "Apagar",
+    "keybind": "p"
+}

@@ -1,0 +1,253 @@
+{
+    "layer": "top",
+    "position": "top",
+    "height": 42,
+    "spacing": 6,
+    "margin-top": 6,
+    "margin-left": 8,
+    "margin-right": 8,
+    "fixed-center": false,
+
+    "modules-left": [
+        "hyprland/workspaces"
+    ],
+
+    "modules-center": [
+        "hyprland/window"
+    ],
+
+    "modules-right": [
+        "tray",
+        "custom/htb-vpn",
+        "custom/target",
+        "group/volume",
+        "custom/battery",
+        "custom/notification",
+        "clock",
+        "image#quick-settings"
+    ],
+
+    "image#quick-settings": {
+        "path": "__DOTFILES_HOME__/.config/waybar/assets/settings-white.svg",
+        "size": 18,
+        "tooltip": true,
+        "tooltip-format": "Ajustes rápidos",
+        "on-click": "~/.config/waybar/scripts/quick-settings-toggle.sh"
+    },
+
+    "custom/htb-vpn": {
+        "exec": "~/.config/waybar/scripts/htb-vpn.sh",
+        "return-type": "json",
+        "interval": 2,
+        "signal": 9,
+        "tooltip": true,
+        "escape": false,
+        "cursor": "pointer",
+        "on-click": "~/.config/waybar/scripts/applet-menu.py vpn",
+        "on-click-right": "~/.config/waybar/scripts/applet-menu.py network"
+    },
+
+    "custom/target": {
+        "exec": "~/.config/waybar/scripts/target.sh",
+        "return-type": "json",
+        "interval": 2,
+        "signal": 9,
+        "tooltip": true
+    },
+
+    "custom/private-ip": {
+        "exec": "~/.config/waybar/scripts/private-ip.sh",
+        "return-type": "json",
+        "interval": 5,
+        "tooltip": true
+    },
+
+    "hyprland/workspaces": {
+        "format": "{name}",
+	"cursor": "pointer",
+	"sort-by": "number",
+        "persistent-workspaces": {
+            "*": [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        },
+
+	"move-to-monitor": false
+    },
+
+    "hyprland/window": {
+        "format": "{}",
+        "max-length": 45,
+        "align": 0.5,
+        "justify": "center",
+        "separate-outputs": true
+    },
+
+    "custom/bluetooth": {
+        "exec": "~/.config/waybar/scripts/bluetooth-status.sh",
+        "return-type": "json",
+        "interval": 2,
+        "signal": 8,
+        "tooltip": true,
+        "cursor": "pointer",
+        "on-click": "~/.config/waybar/scripts/applet-menu.py bluetooth",
+        "on-click-right": "blueman-manager"
+    },
+
+    "network": {
+        "interface": "wl*",
+        "family": "ipv4",
+        "format-wifi": "{icon}",
+        "format-ethernet": "󰈀",
+        "format-disconnected": "󰤭",
+        "format-disabled": "󰖪",
+
+        "format-icons": [
+            "󰤯",
+            "󰤟",
+            "󰤢",
+            "󰤥",
+            "󰤨"
+        ],
+
+        "tooltip-format-wifi": "{essid}\nSeñal: {signalStrength}%\n{ipaddr}",
+        "tooltip-format-ethernet": "{ifname}\n{ipaddr}",
+        "tooltip-format-disconnected": "Sin conexión",
+        "tooltip-format-disabled": "Wi-Fi desactivado",
+
+        "cursor": "pointer",
+        "on-click": "~/.config/waybar/scripts/applet-menu.py network",
+        "on-click-right": "~/.config/waybar/scripts/applet-menu.py network",
+
+        "interval": 2
+},
+
+    "group/volume": {
+        "orientation": "horizontal",
+        "spacing": 0,
+        "modules": ["custom/microphone", "custom/audio-separator", "group/volume-control"]
+    },
+
+    "group/volume-control": {
+	"orientation": "horizontal",
+        "spacing": 0,
+	"drawer": {
+	"transition-duration": 100,
+	"transition-left-to-right": true
+	},
+	"modules": [
+	"custom/audio",
+            "cffi/volume-slider"
+	]
+    },
+
+    "custom/microphone": {
+	"exec": "~/.config/waybar/scripts/microphone.sh",
+	"return-type": "json",
+	"tooltip": false,
+	"align": 0.5,
+	"justify": "center",
+	"cursor": "pointer",
+	"on-click": "~/.config/waybar/scripts/audio-panel-toggle.sh",
+	"on-click-middle": "pavucontrol",
+	"on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
+    },
+
+    "custom/audio-separator": {
+        "exec": "~/.config/waybar/scripts/audio-separator.sh",
+        "return-type": "json",
+        "format": "{}"
+    },
+
+    "custom/audio": {
+	"exec": "~/.config/waybar/scripts/audio-status.sh",
+	    "return-type": "json",
+	"align": 0.5,
+	"justify": "center",
+	"cursor": "pointer",
+	"on-click": "~/.config/waybar/scripts/audio-panel-toggle.sh",
+	"on-click-middle": "pavucontrol",
+	"on-click-right": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+	"on-scroll-up": "wpctl set-volume -l 1 @DEFAULT_AUDIO_SINK@ 5%+",
+	"on-scroll-down": "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
+    },
+
+    "cffi/volume-slider": {
+        "module_path": "__DOTFILES_HOME__/.config/waybar/cffi/volume_slider/volume_slider.so"
+    },
+
+    "custom/battery": {
+        "exec": "~/.config/waybar/scripts/battery-status.sh",
+        "return-type": "json",
+        "interval": 15,
+        "align": 0.5,
+        "justify": "center",
+        "format": "{}",
+        "tooltip": true
+    },
+
+    "power-profiles-daemon": {
+        "format": "{icon}",
+        "cursor": "pointer",
+
+        "tooltip": true,
+        "tooltip-format": "Perfil: {profile}",
+
+        "format-icons": {
+            "default": "󰾅",
+            "performance": "󰓅",
+            "balanced": "󰾅",
+            "power-saver": "󰌪"
+        }
+    },
+
+    "custom/notification": {
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/notification-status.py",
+        "format": "{text}",
+        "align": 0.5,
+        "justify": "center",
+        "format-icons": {
+            "notification": "󰂚",
+            "none": "󰂚",
+            "dnd-notification": "󰂠",
+            "dnd-none": "󰂠",
+            "inhibited-notification": "󰂚",
+            "inhibited-none": "󰂚",
+            "dnd-inhibited-notification": "󰂠",
+            "dnd-inhibited-none": "󰂠"
+        },
+
+        "tooltip": true,
+        "cursor": "pointer",
+
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d"
+    },
+
+    "clock": {
+	"locale": "es_ES.UTF-8",
+	"cursor": "pointer",
+        "align": 0.5,
+        "justify": "center",
+        "format": "{:%d/%m/%Y · %H:%M}",
+        "on-click": "bash ~/.config/waybar/scripts/calendar.sh",
+
+        "tooltip-format": "<big>{:%A %d %B %Y}</big>"
+    },
+
+    "tray": {
+        "icon-size": 1,
+        "spacing": 0,
+        "ignore-list": ["nm-applet", "nm_applet", "blueman"]
+    },
+
+    "custom/power": {
+        "format": "󰐥",
+
+        "tooltip": true,
+        "tooltip-format": "Menú de energía",
+        "cursor": "pointer",
+
+        "on-click": "wlogout -n -b 3 -c 20 -r 20 -L 340 -R 340 -T 250 -B 250",
+        "on-click-right": "hyprlock"
+    }
+}

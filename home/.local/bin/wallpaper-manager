@@ -1,0 +1,195 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+MONITOR="${WALLPAPER_MONITOR:-eDP-1}"
+HYPRPAPER_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/hypr/hyprpaper.conf"
+
+SDDM_THEME_DIR="/usr/share/sddm/themes/sddm-astronaut-theme"
+SDDM_CONF="$SDDM_THEME_DIR/Themes/hyprland_kath.conf"
+SDDM_BG_DIR="$SDDM_THEME_DIR/Backgrounds"
+
+pause() {
+    printf '\nPulsa Enter para continuar...'
+    read -r _
+}
+
+choose_image() {
+    local selected=""
+
+    if command -v zenity >/dev/null 2>&1; then
+        selected="$(zenity --file-selection \
+            --title="Selecciona un wallpaper" \
+            --file-filter="Imágenes | *.png *.jpg *.jpeg *.webp *.gif" \
+            --file-filter="Todos los archivos | *" 2>/dev/null || true)"
+    elif command -v kdialog >/dev/null 2>&1; then
+        selected="$(kdialog --getopenfilename "$HOME" \
+            "Images (*.png *.jpg *.jpeg *.webp *.gif)" 2>/dev/null || true)"
+    else
+        echo
+        echo "No encuentro zenity ni kdialog."
+        echo "Puedes instalar zenity con:"
+        echo "  sudo pacman -S zenity"
+        echo
+        read -r -e -p "Ruta completa de la imagen: " selected
+    fi
+
+    [[ -n "$selected" ]] || return 1
+    [[ -f "$selected" ]] || {
+        echo "No existe el archivo: $selected" >&2
+        return 1
+    }
+
+    case "${selected,,}" in
+        *.png|*.jpg|*.jpeg|*.webp|*.gif)
+            printf '%s\n' "$selected"
+            ;;
+        *)
+            echo "Formato no compatible." >&2
+            return 1
+            ;;
+    esac
+}
+
+set_desktop() {
+    local img
+    img="$(choose_image)" || return 0
+
+    mkdir -p "$(dirname "$HYPRPAPER_CONF")"
+
+    cat > "$HYPRPAPER_CONF" <<EOF
+wallpaper {
+    monitor = $MONITOR
+    path = $img
+    fit_mode = cover
+}
+
+splash = false
+ipc = true
+EOF
+
+    pkill hyprpaper 2>/dev/null || true
+    nohup hyprpaper >/tmp/hyprpaper-wallpaper-manager.log 2>&1 & disown
+
+    echo
+    echo "✓ Fondo de escritorio actualizado:"
+    echo "  $img"
+}
+
+set_login() {
+    local img ext rel dst
+    img="$(choose_image)" || return 0
+
+    [[ -f "$SDDM_CONF" ]] || {
+        echo "No existe: $SDDM_CONF" >&2
+        return 1
+    }
+
+    ext="${img##*.}"
+    ext="${ext,,}"
+    rel="Backgrounds/custom-wallpaper.$ext"
+    dst="$SDDM_BG_DIR/custom-wallpaper.$ext"
+
+    echo
+    echo "Se pedirá autorización para modificar el tema de SDDM."
+
+    if command -v pkexec >/dev/null 2>&1; then
+        pkexec /usr/bin/bash -c '
+            set -euo pipefail
+            src="$1"
+            dst="$2"
+            conf="$3"
+            rel="$4"
+            bgdir="$5"
+
+            mkdir -p "$bgdir"
+            rm -f "$bgdir"/custom-wallpaper.png \
+                  "$bgdir"/custom-wallpaper.jpg \
+                  "$bgdir"/custom-wallpaper.jpeg \
+                  "$bgdir"/custom-wallpaper.webp \
+                  "$bgdir"/custom-wallpaper.gif
+
+            install -m 0644 "$src" "$dst"
+
+            sed -i \
+                -e "s|^[[:space:]]*BackgroundPlaceholder=.*|BackgroundPlaceholder=\"\"|" \
+                -e "s|^[[:space:]]*Background=.*|Background=\"$rel\"|" \
+                "$conf"
+        ' bash "$img" "$dst" "$SDDM_CONF" "$rel" "$SDDM_BG_DIR"
+    else
+        sudo /usr/bin/bash -c '
+            set -euo pipefail
+            src="$1"
+            dst="$2"
+            conf="$3"
+            rel="$4"
+            bgdir="$5"
+
+            mkdir -p "$bgdir"
+            rm -f "$bgdir"/custom-wallpaper.png \
+                  "$bgdir"/custom-wallpaper.jpg \
+                  "$bgdir"/custom-wallpaper.jpeg \
+                  "$bgdir"/custom-wallpaper.webp \
+                  "$bgdir"/custom-wallpaper.gif
+
+            install -m 0644 "$src" "$dst"
+
+            sed -i \
+                -e "s|^[[:space:]]*BackgroundPlaceholder=.*|BackgroundPlaceholder=\"\"|" \
+                -e "s|^[[:space:]]*Background=.*|Background=\"$rel\"|" \
+                "$conf"
+        ' bash "$img" "$dst" "$SDDM_CONF" "$rel" "$SDDM_BG_DIR"
+    fi
+
+    echo
+    echo "✓ Fondo de inicio de sesión actualizado:"
+    echo "  $img"
+}
+
+preview_sddm() {
+    if command -v sddm-greeter-qt6 >/dev/null 2>&1; then
+        sddm-greeter-qt6 --test-mode --theme "$SDDM_THEME_DIR"
+    else
+        echo "No encuentro sddm-greeter-qt6."
+    fi
+}
+
+while true; do
+    clear
+    cat <<'EOF'
+╭──────────────────────────────────────────────╮
+│              WALLPAPER MANAGER               │
+├──────────────────────────────────────────────┤
+│                                              │
+│  1) Cambiar fondo de ESCRITORIO              │
+│  2) Cambiar fondo de INICIO (SDDM)           │
+│  3) Previsualizar SDDM                       │
+│  4) Salir                                    │
+│                                              │
+╰──────────────────────────────────────────────╯
+EOF
+
+    printf '\nElige una opción: '
+    read -r option
+
+    case "$option" in
+        1)
+            set_desktop
+            pause
+            ;;
+        2)
+            set_login
+            pause
+            ;;
+        3)
+            preview_sddm
+            pause
+            ;;
+        4|q|Q)
+            exit 0
+            ;;
+        *)
+            echo "Opción no válida."
+            sleep 1
+            ;;
+    esac
+done

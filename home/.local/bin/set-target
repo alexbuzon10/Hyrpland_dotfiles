@@ -1,0 +1,309 @@
+#!/usr/bin/env bash
+
+set -o nounset
+
+target_dir="${XDG_CACHE_HOME:-$HOME/.cache}/waybar"
+target_state="$target_dir/target"
+vpn_status="$HOME/.config/waybar/scripts/htb-vpn.sh"
+program_name="${0##*/}"
+target_icon=""
+
+# shellcheck source=/dev/null
+source "$HOME/.config/waybar/scripts/nerd-font.sh"
+if [[ -t 1 || -t 2 ]] && nerd_font_icons_enabled; then
+    target_icon="󰓾  "
+fi
+
+# Paleta del módulo target de Waybar. Los colores se omiten si la salida no es
+# un terminal para no introducir secuencias ANSI en pipes o logs.
+if [[ -t 1 || -t 2 ]]; then
+    bold=$'\033[1m'
+    red=$'\033[38;2;255;102;112m'
+    soft_red=$'\033[38;2;200;90;99m'
+    green=$'\033[38;2;159;239;0m'
+    white=$'\033[38;2;229;229;229m'
+    muted=$'\033[38;2;125;130;141m'
+    reset=$'\033[0m'
+else
+    bold=""
+    red=""
+    soft_red=""
+    green=""
+    white=""
+    muted=""
+    reset=""
+fi
+
+print_banner() {
+    printf '\n%b' "$bold$red"
+    cat <<\EOF
+███████ ███████ ████████       ████████  █████  ██████   ██████  ███████ ████████
+██      ██         ██             ██    ██   ██ ██   ██ ██       ██         ██
+███████ █████      ██    █████    ██    ███████ ██████  ██   ███ █████      ██
+     ██ ██         ██             ██    ██   ██ ██   ██ ██    ██ ██         ██
+███████ ███████    ██             ██    ██   ██ ██   ██  ██████  ███████    ██
+EOF
+    printf '%b\n' "$reset"
+}
+
+print_section() {
+    printf '%b%s%b\n' "$bold$soft_red" "$1" "$reset"
+}
+
+print_step() {
+    local number="$1"
+    local title="$2"
+
+    printf '\n%b[%s/4]%b %b%s%b\n' \
+        "$bold$soft_red" "$number" "$reset" "$bold$white" "$title" "$reset"
+}
+
+print_result_ok() {
+    printf '      %bResultado:%b %b✓ %s%b\n' \
+        "$muted" "$reset" "$green" "$1" "$reset"
+}
+
+print_result_error() {
+    printf '      %bResultado:%b %b✗ %s%b\n' \
+        "$muted" "$reset" "$bold$red" "$1" "$reset" >&2
+}
+
+print_usage() {
+    printf 'Uso: %s IP | --status | --flush | --help\n' "$program_name"
+}
+
+print_help() {
+    print_banner
+    printf '%bGestor de targets para laboratorios y entornos locales.%b\n' "$white" "$reset"
+    printf "%bValida la máquina y comparte la IP con Waybar y \$TARGET.%b\n\n" \
+        "$muted" "$reset"
+
+    print_section 'USO'
+    printf '  %b%s IP%b\n' "$white" "$program_name" "$reset"
+    printf '      Comprueba mediante ping que la máquina responde y la establece como target.\n\n'
+    printf '  %b%s --status%b\n' "$white" "$program_name" "$reset"
+    printf "      Muestra el contexto, el target guardado, su conectividad y \$TARGET.\n\n"
+    printf '  %b%s --flush%b\n' "$white" "$program_name" "$reset"
+    printf '      Elimina el target de Waybar y borra la variable de la shell.\n\n'
+
+    print_section 'OPCIONES'
+    printf '  %b-h, --help%b     Muestra este panel de ayuda.\n' "$white" "$reset"
+    printf '  %b-s, --status%b   Consulta el estado actual sin cambiar de target.\n' "$white" "$reset"
+    printf '  %b-f, --flush%b    Elimina el target actual.\n\n' "$white" "$reset"
+
+    print_section 'COMPORTAMIENTO'
+    printf '  • Solo acepta direcciones IPv4 válidas.\n'
+    printf '  • Espera hasta 2 segundos una respuesta ICMP antes de guardar la IP.\n'
+    printf '  • Muestra cada fase y el resultado de validación, ping, contexto y guardado.\n'
+    printf '  • Si la prueba falla, conserva el target anterior.\n'
+    printf '  • Con HTB activa, el target queda asociado a esa VPN.\n'
+    printf '  • Sin HTB, permite targets de TryHackMe, Docker, VMs o la red local.\n'
+    printf '  • Al desconectar HTB solo se elimina un target asociado a HTB.\n'
+    printf '  • Sin target y con HTB desconectada, el módulo de Waybar se oculta.\n\n'
+
+    print_section 'VARIABLES'
+    printf "  %bTARGET%b             IP exportada para órdenes como: nmap -sC -sV \$TARGET\n" \
+        "$white" "$reset"
+    printf '  %bNERD_FONT_ICONS%b    auto, 1 para forzar iconos o 0 para ocultarlos.\n\n' \
+        "$white" "$reset"
+
+    print_section 'EJEMPLOS'
+    printf '  %b%s 10.129.42.15%b\n' "$white" "$program_name" "$reset"
+    printf "  %bnmap -sC -sV \$TARGET%b\n" "$white" "$reset"
+    printf '  %b%s --status%b\n' "$white" "$program_name" "$reset"
+    printf '  %b%s --flush%b\n\n' "$white" "$program_name" "$reset"
+
+    print_section 'CÓDIGOS DE SALIDA'
+    printf '  %b0%b  Operación correcta o target activo y alcanzable.\n' "$green" "$reset"
+    printf '  %b1%b  Target ausente o no alcanzable.\n' "$soft_red" "$reset"
+    printf '  %b2%b  Uso incorrecto o dirección IP no válida.\n\n' "$soft_red" "$reset"
+}
+
+print_error() {
+    local title="$1"
+    local detail="$2"
+
+    printf '\n%b✗  %s%b\n' "$bold$red" "$title" "$reset" >&2
+    printf '   %b%s%b\n\n' "$muted" "$detail" "$reset" >&2
+}
+
+flush_target() {
+    rm -f -- "$target_state"
+}
+
+refresh_waybar() {
+    pkill -RTMIN+9 -x waybar 2>/dev/null || true
+}
+
+valid_ipv4() {
+    local ip="$1"
+    local octet
+    local -a octets
+
+    [[ "$ip" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] || return 1
+
+    IFS=. read -r -a octets <<< "$ip"
+    for octet in "${octets[@]}"; do
+        (( 10#$octet <= 255 )) || return 1
+    done
+}
+
+show_status() {
+    local htb_active=false
+    local saved_target=""
+    local target_context=""
+    local shell_target="${TARGET:-}"
+    local reachable=false
+
+    "$vpn_status" --is-htb && htb_active=true
+
+    if [[ -r "$target_state" ]]; then
+        IFS= read -r saved_target < "$target_state"
+        valid_ipv4 "$saved_target" || saved_target=""
+        target_context=$(sed -n '2s/^context=//p' "$target_state")
+        [[ "$target_context" == "htb" || "$target_context" == "external" ]] \
+            || target_context="htb"
+    fi
+
+    printf '\n%b%sEstado de set-target%b\n' "$bold$red" "$target_icon" "$reset"
+
+    if $htb_active; then
+        printf '   %bVPN HTB%b    %bCONECTADA%b\n' "$muted" "$reset" "$green" "$reset"
+    else
+        printf '   %bVPN HTB%b    %bDESCONECTADA%b\n' "$muted" "$reset" "$soft_red" "$reset"
+    fi
+
+    if [[ -n "$saved_target" ]]; then
+        printf '   %bTarget%b     %b%s%b\n' "$muted" "$reset" "$white" "$saved_target" "$reset"
+        if [[ "$target_context" == "htb" ]]; then
+            printf '   %bContexto%b   Hack The Box\n' "$muted" "$reset"
+        else
+            printf '   %bContexto%b   Externo / local\n' "$muted" "$reset"
+        fi
+    else
+        printf '   %bTarget%b     Sin configurar\n' "$muted" "$reset"
+    fi
+
+    if [[ -n "$shell_target" ]]; then
+        printf '   %b%s%b    %b%s%b\n' "$muted" "\$TARGET" "$reset" "$white" "$shell_target" "$reset"
+    else
+        printf '   %b%s%b    No exportada\n' "$muted" "\$TARGET" "$reset"
+    fi
+
+    if [[ -n "$saved_target" ]]; then
+        if ping -4 -n -c 1 -W 2 "$saved_target" >/dev/null 2>&1; then
+            reachable=true
+            printf '   %bPing%b       %bRESPONDE%b\n' "$muted" "$reset" "$green" "$reset"
+        else
+            printf '   %bPing%b       %bSIN RESPUESTA%b\n' "$muted" "$reset" "$soft_red" "$reset"
+        fi
+    else
+        printf '   %bPing%b       No comprobado\n' "$muted" "$reset"
+    fi
+
+    printf '\n'
+
+    [[ -n "$saved_target" ]] && $reachable
+}
+
+case "${1:-}" in
+    -f|--flush)
+        [[ $# -eq 1 ]] || {
+            print_usage >&2
+            exit 2
+        }
+
+        flush_target
+        refresh_waybar
+        printf '\n%b%sTarget eliminado%b\n' "$bold$soft_red" "$target_icon" "$reset"
+        printf '   %bVariable%b  %b%s%b\n\n' \
+            "$muted" "$reset" "$white" "\$TARGET eliminada" "$reset"
+        exit 0
+        ;;
+    -h|--help)
+        [[ $# -eq 1 ]] || {
+            print_usage >&2
+            exit 2
+        }
+
+        print_help
+        exit 0
+        ;;
+    -s|--status)
+        [[ $# -eq 1 ]] || {
+            print_usage >&2
+            exit 2
+        }
+
+        show_status
+        exit $?
+        ;;
+esac
+
+if [[ $# -ne 1 ]]; then
+    print_usage >&2
+    exit 2
+fi
+
+printf '\n%b%sConfigurando nuevo target%b\n' "$bold$red" "$target_icon" "$reset"
+printf '   %bDirección solicitada:%b  %b%s%b\n' \
+    "$muted" "$reset" "$white" "$1" "$reset"
+
+print_step 1 'Validando la dirección IPv4…'
+if ! valid_ipv4 "$1"; then
+    print_result_error "Dirección no válida: $1"
+    print_error 'No se ha modificado el target' \
+        'Introduce una IPv4 con cuatro octetos entre 0 y 255.'
+    exit 2
+fi
+print_result_ok "IPv4 válida ($1)"
+
+print_step 2 'Comprobando conectividad del target…'
+printf '      %bPrueba:%b     ICMP · 1 intento · timeout de 2 segundos\n' \
+    "$muted" "$reset"
+ping_output=$(ping -4 -n -c 1 -W 2 "$1" 2>&1)
+ping_status=$?
+
+if (( ping_status != 0 )); then
+    print_result_error 'Sin respuesta ICMP'
+    print_error \
+        'No se puede alcanzar el target' \
+        "La máquina $1 no ha respondido. El target anterior se conserva."
+    exit 1
+fi
+
+latency='respuesta recibida'
+if [[ "$ping_output" =~ time[=\<]([0-9.,]+)[[:space:]]*ms ]]; then
+    latency="respuesta en ${BASH_REMATCH[1]} ms"
+fi
+print_result_ok "$latency"
+
+print_step 3 'Detectando el contexto de conexión…'
+target_context="external"
+if "$vpn_status" --is-htb; then
+    target_context="htb"
+    context_label='Hack The Box'
+else
+    context_label='Externo / local (TryHackMe, VM, Docker o LAN)'
+fi
+print_result_ok "$context_label"
+
+print_step 4 'Guardando y sincronizando el target…'
+
+umask 077
+mkdir -p -- "$target_dir"
+temporary_file=$(mktemp "$target_dir/.target.XXXXXX") || exit 1
+trap 'rm -f -- "$temporary_file"' EXIT
+printf '%s\ncontext=%s\n' "$1" "$target_context" > "$temporary_file"
+mv -- "$temporary_file" "$target_state"
+trap - EXIT
+refresh_waybar
+
+print_result_ok 'Configuración guardada y Waybar actualizada'
+
+printf '\n%b✓ Target configurado correctamente%b\n' "$bold$red" "$reset"
+printf '   %bTarget%b      %b%s%b\n' "$muted" "$reset" "$white" "$1" "$reset"
+printf '   %bContexto%b    %s\n' "$muted" "$reset" "$context_label"
+printf '   %bVariable%b    %bTARGET=%s%b\n' "$muted" "$reset" "$white" "$1" "$reset"
+printf "   %bSiguiente%b   Ya puedes usar comandos como: %bnmap -sC -sV \$TARGET%b\n\n" \
+    "$muted" "$reset" "$white" "$reset"

@@ -1,0 +1,39 @@
+/* Alt+Tab con la misma paleta One Dark Pro Darker del tema principal. */
+@import "modern-dark.rasi"
+
+window {
+    width: 650px;
+}
+
+mainbox {
+    spacing: 0px;
+    padding: 16px;
+    children: [ listview, message ];
+}
+
+listview {
+    columns: 5;
+    lines: 8;
+    layout: vertical;
+    flow: horizontal;
+    fixed-columns: false;
+    fixed-height: false;
+    cycle: true;
+    spacing: 7px;
+    scrollbar: false;
+}
+
+element {
+    padding: 14px;
+    border-radius: 10px;
+    children: [ element-icon ];
+}
+
+element-icon {
+    size: 96px;
+    horizontal-align: 0.5;
+}
+
+message {
+    margin: 0px;
+}

@@ -1,0 +1,3 @@
+# Variantes opcionales. waybar-git puede ser necesario si la version estable
+# todavia no expone los modulos CFFI usados por el control de volumen.
+waybar-git
